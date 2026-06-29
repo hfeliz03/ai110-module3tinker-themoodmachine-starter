@@ -9,6 +9,7 @@ This class starts with very simple logic:
   - Convert that score into a mood label
 """
 
+import re
 from typing import List, Dict, Tuple, Optional
 
 from dataset import POSITIVE_WORDS, NEGATIVE_WORDS
@@ -53,7 +54,11 @@ class MoodAnalyzer:
           - Normalize repeated characters ("soooo" -> "soo")
         """
         cleaned = text.strip().lower()
-        tokens = cleaned.split()
+        cleaned = re.sub(r"[^\w\s:'()😭🙃]", " ", cleaned)
+        cleaned = cleaned.replace("i'm", "im")
+        cleaned = cleaned.replace("can't", "cant")
+        cleaned = cleaned.replace("won't", "wont")
+        tokens = re.findall(r":\)|:\(|😭|🙃|[\w']+", cleaned)
 
         return tokens
 
@@ -75,15 +80,46 @@ class MoodAnalyzer:
           - Give some words higher weights than others (for example "hate" < "annoyed")
           - Treat emojis or slang (":)", "lol", "💀") as strong signals
         """
-        # TODO: Implement this method.
-        #   1. Call self.preprocess(text) to get tokens.
-        #   2. Loop over the tokens.
-        #   3. Increase the score for positive words, decrease for negative words.
-        #   4. Return the total score.
-        #
-        # Hint: if you implement negation, you may want to look at pairs of tokens,
-        # like ("not", "happy") or ("never", "fun").
-        pass
+        tokens = self.preprocess(text)
+        score = 0
+
+        negation_words = {"not", "never", "no", "cant", "wont"}
+        positive_signals = {
+            "hopeful": 1,
+            "proud": 1,
+            "finally": 1,
+            "chilling": 1,
+            "chill": 1,
+            "good": 1,
+            ":)": 1,
+        }
+        negative_signals = {
+            "awkward": 1,
+            "traffic": 1,
+            "sick": 1,
+            "sad": 1,
+            "stressed": 1,
+            "tired": 1,
+            "exhausted": 1,
+            ":(": 1,
+            "😭": 1,
+            "🙃": 1,
+        }
+
+        for index, token in enumerate(tokens):
+            prev_token = tokens[index - 1] if index > 0 else ""
+            is_negated = prev_token in negation_words
+
+            if token in self.positive_words or token in positive_signals:
+                weight = positive_signals.get(token, 1)
+                score += -weight if is_negated else weight
+                continue
+
+            if token in self.negative_words or token in negative_signals:
+                weight = negative_signals.get(token, 1)
+                score += weight if is_negated else -weight
+
+        return score
 
     # ---------------------------------------------------------------------
     # Label prediction
@@ -105,12 +141,37 @@ class MoodAnalyzer:
         Just remember that whatever labels you return should match the labels
         you use in TRUE_LABELS in dataset.py if you care about accuracy.
         """
-        # TODO: Implement this method.
-        #   1. Call self.score_text(text) to get the numeric score.
-        #   2. Return "positive" if the score is above 0.
-        #   3. Return "negative" if the score is below 0.
-        #   4. Return "neutral" otherwise.
-        pass
+        tokens = self.preprocess(text)
+        score = self.score_text(text)
+
+        positive_cues = 0
+        negative_cues = 0
+        negation_words = {"not", "never", "no", "cant", "wont"}
+        positive_signals = {"hopeful", "proud", "finally", "chilling", "chill", "good", ":)"}
+        negative_signals = {"awkward", "traffic", "sick", "sad", "stressed", "tired", "exhausted", ":(", "😭", "🙃"}
+
+        for index, token in enumerate(tokens):
+            prev_token = tokens[index - 1] if index > 0 else ""
+            is_negated = prev_token in negation_words
+
+            if token in self.positive_words or token in positive_signals:
+                if is_negated:
+                    negative_cues += 1
+                else:
+                    positive_cues += 1
+            elif token in self.negative_words or token in negative_signals:
+                if is_negated:
+                    positive_cues += 1
+                else:
+                    negative_cues += 1
+
+        if positive_cues > 0 and negative_cues > 0:
+            return "mixed"
+        if score > 0:
+            return "positive"
+        if score < 0:
+            return "negative"
+        return "neutral"
 
     # ---------------------------------------------------------------------
     # Explanations (optional but recommended)

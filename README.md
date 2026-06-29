@@ -65,3 +65,18 @@ During this lab you will:
 - When debugging, print tokens, scores, or intermediate choices.
 - Ask an AI assistant to help create edge case posts or unusual wording.
 - Try examples that mislead or confuse your model. Failure cases teach you the most.
+
+---
+
+## TF Notes
+
+This lab is a nice fit for TF because students can see the full loop without getting buried in math or tooling. They edit a few rules, add a few examples, and immediately see how those choices change predictions. That makes it easier to talk about concepts like labeling, ambiguity, bias, and overfitting in a way that feels concrete instead of abstract.
+
+The biggest thing to watch for is that students may assume the model is "smart" when it is really just reacting to tokens and labels. That is actually the teaching opportunity. The rule-based version helps them notice how brittle hand-written logic can be, and the ML version helps them see how quickly a model can appear accurate when it is trained and tested on the same tiny dataset.
+
+What tends to help most:
+
+- Encourage students to make realistic posts, not obviously positive or negative ones only.
+- Have them inspect wrong predictions out loud and explain what the model noticed.
+- Remind them that disagreement in labels is part of the lesson, especially with sarcasm, slang, and mixed emotions.
+- Frame the ML result carefully: a high score here does not mean the model truly understands language.
